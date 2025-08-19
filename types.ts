@@ -15,9 +15,19 @@ export interface Realm {
 export interface Player {
   name: string;
   realm: Realm;
-  cultivation: number;
-  lifespan: number;
+  exp: number;
+  age: number;
+  hp: number;
+  maxHp: number;
+  mp: number;
+  maxMp: number;
+  attack: number;
+  defense: number;
+  luck: number;
+  sect: string;
   spiritualRoot: SpiritualRoot;
+  weapon: string;
+  armor: string;
 }
 
 export interface GameEvent {
@@ -27,7 +37,7 @@ export interface GameEvent {
 }
 
 export interface GeminiEventEffect {
-    tuviGained?: number;
+    expGained?: number;
     thoNguyenChange?: number;
 }
 

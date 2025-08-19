@@ -10,13 +10,13 @@ export const SPIRITUAL_ROOTS: SpiritualRoot[] = [
 ];
 
 export const REALMS: Realm[] = [
-  { id: 0, name: 'Luyện Khí Kỳ', required: 1000, lifespanBonus: 20 },
-  { id: 1, name: 'Trúc Cơ Kỳ', required: 5000, lifespanBonus: 50 },
-  { id: 2, name: 'Kim Đan Kỳ', required: 25000, lifespanBonus: 100 },
-  { id: 3, name: 'Nguyên Anh Kỳ', required: 100000, lifespanBonus: 200 },
-  { id: 4, name: 'Hóa Thần Kỳ', required: 500000, lifespanBonus: 500 },
-  { id: 5, name: 'Luyện Hư Kỳ', required: 2500000, lifespanBonus: 1000 },
-  { id: 6, name: 'Hợp Thể Kỳ', required: 10000000, lifespanBonus: 5000 },
-  { id: 7, name: 'Đại Thừa Kỳ', required: 50000000, lifespanBonus: 10000 },
-  { id: 8, name: 'Độ Kiếp Kỳ', required: 200000000, lifespanBonus: 0 }, // No bonus, preparing for ascension
+  { id: 0, name: 'Luyện Thể Tầng 1', required: 100, lifespanBonus: 5 },
+  { id: 1, name: 'Luyện Thể Tầng 2', required: 250, lifespanBonus: 5 },
+  { id: 2, name: 'Luyện Thể Tầng 3', required: 500, lifespanBonus: 5 },
+  { id: 3, name: 'Luyện Thể Tầng 4', required: 1000, lifespanBonus: 10 },
+  { id: 4, name: 'Trúc Cơ Kỳ', required: 5000, lifespanBonus: 50 },
+  { id: 5, name: 'Kim Đan Kỳ', required: 25000, lifespanBonus: 100 },
+  { id: 6, name: 'Nguyên Anh Kỳ', required: 100000, lifespanBonus: 200 },
+  { id: 7, name: 'Hóa Thần Kỳ', required: 500000, lifespanBonus: 500 },
+  { id: 8, name: 'Đại Thừa Kỳ', required: 50000000, lifespanBonus: 10000 },
 ];

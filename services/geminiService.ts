@@ -13,7 +13,7 @@ const ai = new GoogleGenAI({ apiKey: API_KEY! });
 const eventSchema = {
   type: Type.OBJECT,
   properties: {
-    eventName: { 
+    eventName: {
         type: Type.STRING,
         description: "Tên ngắn gọn của sự kiện, ví dụ: 'Gặp Kỳ Ngộ', 'Nhặt Được Bí Cảnh'."
     },
@@ -24,16 +24,16 @@ const eventSchema = {
     effect: {
       type: Type.OBJECT,
       properties: {
-        tuviGained: {
+        expGained: {
           type: Type.NUMBER,
-          description: "Lượng tu vi nhận được (số dương) hoặc mất đi (số âm). Giá trị nên hợp lý với cảnh giới hiện tại."
+          description: "Lượng kinh nghiệm (tu vi) nhận được (số dương) hoặc mất đi (số âm). Giá trị nên hợp lý với cảnh giới hiện tại."
         },
         thoNguyenChange: {
           type: Type.NUMBER,
           description: "Số năm thọ nguyên tăng thêm (số dương) hoặc giảm đi (số âm)."
         }
       },
-      required: ["tuviGained", "thoNguyenChange"]
+      required: ["expGained", "thoNguyenChange"]
     }
   },
   required: ["eventName", "description", "effect"]
@@ -62,16 +62,16 @@ const encounterSchema = {
           effect: {
             type: Type.OBJECT,
             properties: {
-              tuviGained: {
+              expGained: {
                 type: Type.NUMBER,
-                description: "Lượng tu vi thay đổi."
+                description: "Lượng kinh nghiệm (tu vi) thay đổi."
               },
               thoNguyenChange: {
                 type: Type.NUMBER,
                 description: "Số năm thọ nguyên thay đổi."
               }
             },
-            required: ["tuviGained", "thoNguyenChange"]
+            required: ["expGained", "thoNguyenChange"]
           }
         },
         required: ["text", "outcome", "effect"]
@@ -86,7 +86,7 @@ export const generateRandomEvent = async (currentRealm: string): Promise<GeminiE
     const prompt = `Tạo một sự kiện ngẫu nhiên cho một người chơi trong game tu tiên văn bản.
     - Cảnh giới hiện tại của người chơi: ${currentRealm}.
     - Sự kiện có thể là một cơ duyên (nhặt được linh dược, gặp cao nhân) hoặc một tiểu nạn (gặp yêu thú, tu luyện tẩu hỏa nhập ma).
-    - Lượng tu vi và thọ nguyên thay đổi phải hợp lý với cảnh giới ${currentRealm}. Ví dụ ở cảnh giới thấp thì không thể nhận được hàng vạn tu vi.
+    - Lượng kinh nghiệm (exp) và thọ nguyên thay đổi phải hợp lý với cảnh giới ${currentRealm}. Ví dụ ở cảnh giới thấp thì không thể nhận được hàng vạn kinh nghiệm.
     - Giữ mô tả ngắn gọn và mang đậm không khí tiên hiệp.`;
 
     const response = await ai.models.generateContent({
@@ -115,7 +115,7 @@ export const generateEncounter = async (currentRealm: string): Promise<GeminiEnc
     - Cảnh giới hiện tại: ${currentRealm}.
     - Tình huống nên có một mô tả ngắn (2-4 câu) và chính xác 3 lựa chọn.
     - Mỗi lựa chọn phải có rủi ro và phần thưởng, không có lựa chọn nào là an toàn tuyệt đối.
-    - Hiệu ứng (thay đổi tu vi, thọ nguyên) phải hợp lý với cảnh giới của người chơi.
+    - Hiệu ứng (thay đổi kinh nghiệm, thọ nguyên) phải hợp lý với cảnh giới của người chơi.
     - Ví dụ: Gặp một sơn động tỏa linh khí. Lựa chọn: 1. Vào thăm dò, 2. Đánh dấu rồi đi, 3. Bỏ qua.
     - Kết quả phải ở định dạng JSON.`;
 
@@ -131,14 +131,13 @@ export const generateEncounter = async (currentRealm: string): Promise<GeminiEnc
 
     const jsonText = response.text.trim();
     const encounterData: GeminiEncounterResponse = JSON.parse(jsonText);
-
-    // Ensure there are 3-4 choices as requested
-    if (encounterData.choices && encounterData.choices.length >= 3 && encounterData.choices.length <= 4) {
+    
+    if (encounterData.choices && encounterData.choices.length >= 2 && encounterData.choices.length <= 4) {
       return encounterData;
     } else {
-        // Fallback or retry logic can be added here
-       console.warn("Generated encounter does not have 3-4 choices.");
-       return null;
+       console.warn("Generated encounter does not have 2-4 choices. Retrying might be needed.");
+       // Returning data even if choice count is off, to prevent soft-locks.
+       return encounterData;
     }
 
   } catch (error) {

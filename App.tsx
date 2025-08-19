@@ -1,9 +1,10 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
+import Header from './components/Header';
 import StartScreen from './components/StartScreen';
 import GameScreen from './components/GameScreen';
 import EncounterScreen from './components/EncounterScreen';
-import { Player, Realm, SpiritualRoot, GameEvent, GeminiEncounterResponse, EncounterChoice } from './types';
+import { Player, GameEvent, GeminiEncounterResponse, EncounterChoice } from './types';
 import { REALMS, SPIRITUAL_ROOTS } from './constants';
 import { generateRandomEvent, generateEncounter } from './services/geminiService';
 
@@ -14,35 +15,47 @@ const App: React.FC = () => {
   const [currentEncounter, setCurrentEncounter] = useState<GeminiEncounterResponse | null>(null);
 
   const addLog = useCallback((message: string, type: GameEvent['type'] = 'system') => {
-    setLog(prevLog => [{ message, type, timestamp: new Date() }, ...prevLog.slice(0, 99)]);
+    const timestamp = new Date();
+    const timeString = timestamp.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const formattedMessage = `[${timeString}] ${message}`;
+    setLog(prevLog => [{ message: formattedMessage, type, timestamp }, ...prevLog.slice(0, 99)]);
   }, []);
 
   const handleStartGame = (name: string) => {
     const randomRoot = SPIRITUAL_ROOTS[Math.floor(Math.random() * SPIRITUAL_ROOTS.length)];
     const initialPlayer: Player = {
-      name,
+      name: name,
       realm: REALMS[0],
-      cultivation: 0,
-      lifespan: 100,
+      exp: 0,
+      age: 16,
+      hp: 15,
+      maxHp: 20,
+      mp: 0,
+      maxMp: 0,
+      attack: 2,
+      defense: 1,
+      luck: 4,
+      sect: 'Tán Tu',
       spiritualRoot: randomRoot,
+      weapon: 'Trống',
+      armor: 'Trống',
     };
     setPlayer(initialPlayer);
-    addLog(`Chào mừng đạo hữu ${name} bước vào con đường tu tiên.`, 'system');
-    addLog(`Linh căn của bạn là: ${randomRoot.name}. Tốc độ tu luyện ${randomRoot.modifier * 100}%.`, 'system');
+    addLog(`Chào mừng ${name} đến với thế giới tu tiên! Hành trình của bạn bắt đầu từ ${initialPlayer.realm.name}.`, 'system');
+    addLog(`Linh căn của bạn là: ${randomRoot.name}.`, 'system');
   };
-  
+
   const handleCultivate = useCallback(async () => {
     if (!player) return;
     setIsLoading(true);
 
-    const baseGain = 100; // Increased base gain for 10s meditation
-    const cultivationGained = Math.floor(baseGain * player.spiritualRoot.modifier * (player.realm.id + 1));
-    const newCultivation = player.cultivation + cultivationGained;
+    const baseGain = 10;
+    const expGained = Math.floor(baseGain * player.spiritualRoot.modifier * (player.realm.id + 1));
+    const newExp = player.exp + expGained;
 
-    addLog(`Sau 10 giây tĩnh tọa, bạn nhận được ${cultivationGained} tu vi.`, 'cultivate');
+    addLog(`Bạn tĩnh tọa tu luyện, nhận được ${expGained} kinh nghiệm.`, 'cultivate');
 
-    // Random event chance
-    if (Math.random() < 0.15) { // 15% chance
+    if (Math.random() < 0.15) {
       try {
         addLog('Dường như có điềm lạ...', 'event');
         const event = await generateRandomEvent(player.realm.name);
@@ -53,30 +66,27 @@ const App: React.FC = () => {
             if (!p) return null;
             return {
               ...p,
-              cultivation: Math.max(0, p.cultivation + cultivationGained + (effect.tuviGained || 0)),
-              lifespan: p.lifespan + (effect.thoNguyenChange || 0)
+              exp: Math.max(0, p.exp + expGained + (effect.expGained || 0)),
+              // Thọ nguyên is not a stat yet, this can be added later
             };
           });
-          if(effect.tuviGained && effect.tuviGained > 0) addLog(`Tu vi tăng thêm ${effect.tuviGained}!`, 'event');
-          if(effect.tuviGained && effect.tuviGained < 0) addLog(`Tu vi giảm đi ${Math.abs(effect.tuviGained)}!`, 'danger');
-          if(effect.thoNguyenChange && effect.thoNguyenChange > 0) addLog(`Thọ nguyên tăng thêm ${effect.thoNguyenChange} năm!`, 'event');
-          if(effect.thoNguyenChange && effect.thoNguyenChange < 0) addLog(`Thọ nguyên giảm đi ${Math.abs(effect.thoNguyenChange)} năm!`, 'danger');
+          if(effect.expGained && effect.expGained > 0) addLog(`Kinh nghiệm tăng thêm ${effect.expGained}!`, 'event');
+          if(effect.expGained && effect.expGained < 0) addLog(`Kinh nghiệm giảm đi ${Math.abs(effect.expGained)}!`, 'danger');
         }
       } catch (error) {
         console.error("Lỗi khi tạo sự kiện:", error);
         addLog("Thiên cơ hỗn loạn, không có gì xảy ra.", 'system');
-        setPlayer(p => p ? { ...p, cultivation: newCultivation } : null);
+        setPlayer(p => p ? { ...p, exp: newExp } : null);
       }
     } else {
-      setPlayer(p => p ? { ...p, cultivation: newCultivation } : null);
+      setPlayer(p => p ? { ...p, exp: newExp } : null);
     }
 
     setIsLoading(false);
   }, [player, addLog]);
 
-
   const handleBreakthrough = useCallback(() => {
-    if (!player || player.cultivation < player.realm.required) return;
+    if (!player || player.exp < player.realm.required) return;
     setIsLoading(true);
 
     const nextRealmIndex = player.realm.id + 1;
@@ -87,26 +97,25 @@ const App: React.FC = () => {
     }
 
     const nextRealm = REALMS[nextRealmIndex];
-    const successChance = 0.8 / (nextRealmIndex * 0.5);
+    const successChance = 0.8 / ((nextRealmIndex + 1) * 0.25);
+
+    addLog(`Bắt đầu đột phá cảnh giới ${nextRealm.name}...`, 'breakthrough');
 
     setTimeout(() => {
       if (Math.random() < successChance) {
         setPlayer({
           ...player,
           realm: nextRealm,
-          cultivation: 0,
-          lifespan: player.lifespan + nextRealm.lifespanBonus,
+          exp: 0,
         });
-        addLog(`Đột phá thành công! Chúc mừng đạo hữu đã tiến vào cảnh giới ${nextRealm.name}. Thọ nguyên tăng ${nextRealm.lifespanBonus} năm.`, 'breakthrough');
+        addLog(`Đột phá thành công! Chúc mừng đạo hữu đã tiến vào cảnh giới ${nextRealm.name}.`, 'breakthrough');
       } else {
-        const cultivationLoss = Math.floor(player.cultivation * 0.3);
-        const lifespanLoss = 10 * nextRealmIndex;
+        const expLoss = Math.floor(player.exp * 0.3);
         setPlayer({
           ...player,
-          cultivation: player.cultivation - cultivationLoss,
-          lifespan: player.lifespan - lifespanLoss,
+          exp: player.exp - expLoss,
         });
-        addLog(`Đột phá thất bại! Cảnh giới bất ổn, tu vi tổn thất ${cultivationLoss}, thọ nguyên giảm ${lifespanLoss} năm.`, 'danger');
+        addLog(`Đột phá thất bại! Cảnh giới bất ổn, kinh nghiệm tổn thất ${expLoss}.`, 'danger');
       }
       setIsLoading(false);
     }, 2000);
@@ -134,41 +143,36 @@ const App: React.FC = () => {
   const handleResolveEncounter = useCallback((choice: EncounterChoice) => {
     if (!player) return;
     
-    addLog(`[Lựa chọn] ${choice.text}`, 'encounter');
-    addLog(`[Kết quả] ${choice.outcome}`, 'encounter');
+    addLog(`Bạn chọn: "${choice.text}"`, 'encounter');
+    addLog(choice.outcome, 'encounter');
 
     setPlayer(p => {
       if (!p) return null;
       return {
         ...p,
-        cultivation: Math.max(0, p.cultivation + (choice.effect.tuviGained || 0)),
-        lifespan: p.lifespan + (choice.effect.thoNguyenChange || 0)
+        exp: Math.max(0, p.exp + (choice.effect.expGained || 0)),
       };
     });
 
-    if(choice.effect.tuviGained && choice.effect.tuviGained > 0) addLog(`Tu vi tăng thêm ${choice.effect.tuviGained}!`, 'event');
-    if(choice.effect.tuviGained && choice.effect.tuviGained < 0) addLog(`Tu vi giảm đi ${Math.abs(choice.effect.tuviGained)}!`, 'danger');
-    if(choice.effect.thoNguyenChange && choice.effect.thoNguyenChange > 0) addLog(`Thọ nguyên tăng thêm ${choice.effect.thoNguyenChange} năm!`, 'event');
-    if(choice.effect.thoNguyenChange && choice.effect.thoNguyenChange < 0) addLog(`Thọ nguyên giảm đi ${Math.abs(choice.effect.thoNguyenChange)} năm!`, 'danger');
-
+    if(choice.effect.expGained && choice.effect.expGained > 0) addLog(`Kinh nghiệm tăng thêm ${choice.effect.expGained}!`, 'event');
+    if(choice.effect.expGained && choice.effect.expGained < 0) addLog(`Kinh nghiệm giảm đi ${Math.abs(choice.effect.expGained)}!`, 'danger');
+    
     setCurrentEncounter(null);
   }, [player, addLog]);
 
-
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-200 p-4 md:p-8 selection:bg-yellow-500/30">
-      <div className="max-w-4xl mx-auto">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-yellow-500 to-amber-500 pb-2">
-            Vĩnh Sinh Chi Mộng
-          </h1>
-          <p className="text-gray-400 italic">Con đường tu tiên vạn dặm, bắt đầu từ một bước chân.</p>
-        </header>
-        <main className="bg-gray-800/50 backdrop-blur-sm rounded-lg shadow-2xl shadow-yellow-500/10 border border-yellow-500/20 p-6 min-h-[60vh]">
+    <div className="min-h-screen p-4 md:p-6 lg:p-8 selection:bg-purple-500/30">
+      <div className="max-w-7xl mx-auto">
+        <Header />
+        <main className="mt-8">
           {!player ? (
-            <StartScreen onStart={handleStartGame} />
+            <div className="panel max-w-lg mx-auto">
+              <StartScreen onStart={handleStartGame} />
+            </div>
           ) : currentEncounter ? (
-            <EncounterScreen encounter={currentEncounter} onResolve={handleResolveEncounter} />
+            <div className="panel max-w-2xl mx-auto">
+             <EncounterScreen encounter={currentEncounter} onResolve={handleResolveEncounter} />
+            </div>
           ) : (
             <GameScreen
               player={player}
